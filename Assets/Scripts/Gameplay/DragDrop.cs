@@ -80,17 +80,17 @@ public class DragDrop : MonoBehaviour
             return;
         }
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (IsPrimaryClickedThisFrame())
         {
             StartDrag();
         }
 
-        if (Mouse.current.leftButton.isPressed && isDragging)
+        if (IsPrimaryClickHeld() && isDragging)
         {
             Drag();
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (IsPrimaryClickReleased())
         {
             if (isDragging)
             {
@@ -103,21 +103,17 @@ public class DragDrop : MonoBehaviour
     void StartDrag()
     {
 
-        if (IsPointerOverUI())
-        {
-            return;
-        }
+        if (IsPointerOverUI()) return;
 
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Ray ray = cam.ScreenPointToRay(mousePos);
-
+        Vector2 pointerPos = GetPointerPosition();
+        Ray ray = cam.ScreenPointToRay(pointerPos);
         RaycastHit2D hit = Physics2D.GetRayIntersection(ray);
 
         if (hit.collider != null && hit.collider.gameObject == gameObject)
         {
             isDragging = true;
             initialPos = transform.position;
-            offset = transform.position - GetMouseWorldPosition(mousePos);
+            offset = transform.position - GetMouseWorldPosition(pointerPos);
 
             if (AudioManager.Instance != null && dragSound != null)
             {
@@ -128,8 +124,8 @@ public class DragDrop : MonoBehaviour
 
     void Drag()
     {
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Vector3 trashPos = GetMouseWorldPosition(mousePos) + offset;
+        Vector2 pointerPos = GetPointerPosition();
+        Vector3 trashPos = GetMouseWorldPosition(pointerPos) + offset;
         trashPos.z -= 2;
         transform.position = trashPos;
     }
@@ -206,7 +202,7 @@ public class DragDrop : MonoBehaviour
         if (EventSystem.current == null) return false;
 
         PointerEventData eventData = new PointerEventData(EventSystem.current);
-        eventData.position = Mouse.current.position.ReadValue();
+        eventData.position = GetPointerPosition();
 
         System.Collections.Generic.List<RaycastResult> results = new System.Collections.Generic.List<RaycastResult>();
         EventSystem.current.RaycastAll(eventData, results);
@@ -219,6 +215,60 @@ public class DragDrop : MonoBehaviour
             }
         }
         return false;
+    }
+
+    // INPUT HELPERS
+
+    private bool IsPrimaryClickedThisFrame()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsPrimaryClickHeld()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsPrimaryClickReleased()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasReleasedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private Vector2 GetPointerPosition()
+    {
+        if (Touchscreen.current != null)
+        {
+            return Touchscreen.current.primaryTouch.position.ReadValue();
+        }
+        if (Mouse.current != null)
+        {
+            return Mouse.current.position.ReadValue();
+        }
+        return Vector2.zero;
     }
 
     void OnDrawGizmos()

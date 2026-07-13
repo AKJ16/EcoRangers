@@ -26,18 +26,21 @@ public class TapePuller : MonoBehaviour
     {
         if (Time.timeScale <= 0.99f) return;
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (IsPrimaryClickedThisFrame())
         {
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            RaycastHit2D hit = Physics2D.GetRayIntersection(cam.ScreenPointToRay(mousePos));
+            Vector2 pointerPos = GetPointerPosition();
+            RaycastHit2D hit = Physics2D.GetRayIntersection(cam.ScreenPointToRay(pointerPos));
             if (hit.collider != null && hit.collider.gameObject == gameObject)
+            {
                 isDragging = true;
+            }
         }
 
-        if (isDragging && Mouse.current.leftButton.isPressed)
+        if (isDragging && IsPrimaryClickHeld())
         {
-            Vector3 mouseWorldPos = cam.ScreenToWorldPoint(new Vector3(Mouse.current.position.ReadValue().x, Mouse.current.position.ReadValue().y, 10f));
-            Vector3 localPos = boxTransform.InverseTransformPoint(mouseWorldPos);
+            Vector2 pointerPos = GetPointerPosition();
+            Vector3 worldPos = cam.ScreenToWorldPoint(new Vector3(pointerPos.x, pointerPos.y, 10f));
+            Vector3 localPos = boxTransform.InverseTransformPoint(worldPos);
 
             float absoluteMin = Mathf.Min(startY, endY);
             float absoluteMax = Mathf.Max(startY, endY);
@@ -53,7 +56,7 @@ public class TapePuller : MonoBehaviour
             }
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (IsPrimaryClickReleased())
         {
             isDragging = false;
         }
@@ -64,5 +67,59 @@ public class TapePuller : MonoBehaviour
         isDragging = false;
         boxLogic.UnsealBox();
         Destroy(gameObject);
+    }
+
+    // INPUT HELPERS
+
+    private bool IsPrimaryClickedThisFrame()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsPrimaryClickHeld()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsPrimaryClickReleased()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasReleasedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private Vector2 GetPointerPosition()
+    {
+        if (Touchscreen.current != null)
+        {
+            return Touchscreen.current.primaryTouch.position.ReadValue();
+        }
+        if (Mouse.current != null)
+        {
+            return Mouse.current.position.ReadValue();
+        }
+        return Vector2.zero;
     }
 }

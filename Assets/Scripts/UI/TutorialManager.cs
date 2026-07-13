@@ -60,7 +60,7 @@ public class TutorialManager : MonoBehaviour
             StopCoroutine(slowTimeCoroutine);
         }
 
-        StartCoroutine(SlowTime(index));
+        slowTimeCoroutine = StartCoroutine(SlowTime(index));
         transition.Show();
     }
 

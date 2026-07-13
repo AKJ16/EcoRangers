@@ -36,10 +36,10 @@ public class BoxLogic : MonoBehaviour
     {
         if (Time.timeScale <= 0.99f) return;
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (IsPrimaryClickedThisFrame())
         {
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            Ray ray = cam.ScreenPointToRay(mousePos);
+            Vector2 pointerPos = GetPointerPosition();
+            Ray ray = cam.ScreenPointToRay(pointerPos);
             RaycastHit2D hit = Physics2D.GetRayIntersection(ray);
 
             if (hit.collider != null && hit.collider.gameObject == gameObject)
@@ -135,5 +135,33 @@ public class BoxLogic : MonoBehaviour
     public bool GetIsFlattened()
     {
         return isFlattened;
+    }
+
+    // INPUT HELPERS
+
+    private bool IsPrimaryClickedThisFrame()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private Vector2 GetPointerPosition()
+    {
+        if (Touchscreen.current != null)
+        {
+            return Touchscreen.current.primaryTouch.position.ReadValue();
+        }
+        if (Mouse.current != null)
+        {
+            return Mouse.current.position.ReadValue();
+        }
+        return Vector2.zero;
     }
 }

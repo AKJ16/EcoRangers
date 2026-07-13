@@ -47,17 +47,17 @@ public class ResidueTray : MonoBehaviour
             return;
         }
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (IsPrimaryClickedThisFrame())
         {
             StartDrag();
         }
 
-        if (Mouse.current.leftButton.isPressed && isDragging)
+        if (IsPrimaryClickHeld() && isDragging)
         {
             Drag();
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (IsPrimaryClickReleased())
         {
             if (isDragging)
             {
@@ -69,9 +69,8 @@ public class ResidueTray : MonoBehaviour
 
     void StartDrag()
     {
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Ray ray = cam.ScreenPointToRay(mousePos);
-
+        Vector2 pointerPos = GetPointerPosition();
+        Ray ray = cam.ScreenPointToRay(pointerPos);
         RaycastHit2D hit = Physics2D.GetRayIntersection(ray);
 
         if (hit.collider != null && hit.collider.gameObject == gameObject)
@@ -79,7 +78,7 @@ public class ResidueTray : MonoBehaviour
             isDragging = true;
             initialPos = transform.position;
             transform.position = new Vector3(transform.position.x, transform.position.y, -1);
-            offset = transform.position - GetMouseWorldPosition(mousePos);
+            offset = transform.position - GetMouseWorldPosition(pointerPos);
 
             if (AudioManager.Instance != null && dragSound != null)
             {
@@ -90,8 +89,8 @@ public class ResidueTray : MonoBehaviour
 
     void Drag()
     {
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        transform.position = GetMouseWorldPosition(mousePos) + offset;
+        Vector2 pointerPos = GetPointerPosition();
+        transform.position = GetMouseWorldPosition(pointerPos) + offset;
     }
 
     Vector3 GetMouseWorldPosition(Vector2 screenPos)
@@ -133,6 +132,60 @@ public class ResidueTray : MonoBehaviour
             } 
         }
         isReturning = true;
+    }
+
+    // INPUT HELPERS
+
+    private bool IsPrimaryClickedThisFrame()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsPrimaryClickHeld()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsPrimaryClickReleased()
+    {
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasReleasedThisFrame)
+        {
+            return true;
+        }
+        if (Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private Vector2 GetPointerPosition()
+    {
+        if (Touchscreen.current != null)
+        {
+            return Touchscreen.current.primaryTouch.position.ReadValue();
+        }
+        if (Mouse.current != null)
+        {
+            return Mouse.current.position.ReadValue();
+        }
+        return Vector2.zero;
     }
     private void OnDrawGizmosSelected()
     {
