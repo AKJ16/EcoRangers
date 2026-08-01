@@ -141,9 +141,9 @@ public class BoxLogic : MonoBehaviour
 
     private bool IsPrimaryClickedThisFrame()
     {
-        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        if (Touchscreen.current != null && (Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld))
         {
-            return true;
+            return Touchscreen.current.primaryTouch.press.wasPressedThisFrame;
         }
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -154,7 +154,7 @@ public class BoxLogic : MonoBehaviour
 
     private Vector2 GetPointerPosition()
     {
-        if (Touchscreen.current != null)
+        if (Touchscreen.current != null && (Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld))
         {
             return Touchscreen.current.primaryTouch.position.ReadValue();
         }

@@ -138,9 +138,9 @@ public class ResidueTray : MonoBehaviour
 
     private bool IsPrimaryClickedThisFrame()
     {
-        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        if (Touchscreen.current != null && (Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld))
         {
-            return true;
+            return Touchscreen.current.primaryTouch.press.wasPressedThisFrame;
         }
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -151,9 +151,9 @@ public class ResidueTray : MonoBehaviour
 
     private bool IsPrimaryClickHeld()
     {
-        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+        if (Touchscreen.current != null && (Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld))
         {
-            return true;
+            return Touchscreen.current.primaryTouch.press.isPressed;
         }
         if (Mouse.current != null && Mouse.current.leftButton.isPressed)
         {
@@ -164,9 +164,9 @@ public class ResidueTray : MonoBehaviour
 
     private bool IsPrimaryClickReleased()
     {
-        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasReleasedThisFrame)
+        if (Touchscreen.current != null && (Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld))
         {
-            return true;
+            return Touchscreen.current.primaryTouch.press.wasReleasedThisFrame;
         }
         if (Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame)
         {
@@ -177,7 +177,7 @@ public class ResidueTray : MonoBehaviour
 
     private Vector2 GetPointerPosition()
     {
-        if (Touchscreen.current != null)
+        if (Touchscreen.current != null && (Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld))
         {
             return Touchscreen.current.primaryTouch.position.ReadValue();
         }
