@@ -8226,8 +8226,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff9f9f78400519fa09592bb28771d4eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialManager
-  transition: {fileID: 0}
-  milestoneObjects: []
+  transition: {fileID: 1285304270}
+  milestoneObjects:
+  - {fileID: 609403072}
+  - {fileID: 746731438}
+  - {fileID: 1838667557}
+  - {fileID: 465003289}
+  - {fileID: 160046586}
+  - {fileID: 1777562020}
   buttonText: {fileID: 0}
   extraText: {fileID: 0}
   startText: Start!!

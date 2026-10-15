@@ -40,11 +40,23 @@ public class TutorialManager : MonoBehaviour
             extraRestRotation = extraText.rectTransform.localRotation;
         }
 
+        if (milestoneObjects == null || milestoneObjects.Length == 0)
+        {
+            Debug.LogError("TutorialManager: 'Milestone Objects' kosong di Inspector (harus berisi panel Milestone 0-5). Tutorial tidak akan muncul dan timer tidak akan mulai.");
+            milestoneObjects = new GameObject[0];
+        }
+
         animators = new TutorialPanelAnimator[milestoneObjects.Length];
 
         for (int i = 0; i < milestoneObjects.Length; i++)
         {
             GameObject obj = milestoneObjects[i];
+            if (obj == null)
+            {
+                Debug.LogWarning("TutorialManager: milestoneObjects[" + i + "] kosong (None) di Inspector.");
+                continue;
+            }
+
             obj.SetActive(false);
 
             // Animator ditambahkan lewat kode, tidak perlu dipasang di scene
@@ -80,6 +92,7 @@ public class TutorialManager : MonoBehaviour
     public void ShowTutorial(int index)
     {
         if (index < 0 || index >= milestoneObjects.Length) return;
+        if (milestoneObjects[index] == null) return;
 
         if (buttonText != null)
         {
@@ -93,13 +106,29 @@ public class TutorialManager : MonoBehaviour
 
         for (int i = 0; i < milestoneObjects.Length; i++)
         {
-            milestoneObjects[i].SetActive(i == index);
+            if (milestoneObjects[i] != null)
+            {
+                milestoneObjects[i].SetActive(i == index);
+            }
         }
 
         isOpen = true;
         closeUnlockTime = Time.unscaledTime + closeUnlockDelay;
 
-        AudioManager.Instance.MuffleAudio(0.6f);
+        // Panel ditampilkan lebih dulu; bagian lain dijaga null supaya tidak menghentikan tutorial
+        if (transition != null)
+        {
+            transition.Show();
+        }
+        else
+        {
+            Debug.LogWarning("TutorialManager: 'transition' belum diisi di Inspector, panel tidak akan muncul.");
+        }
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.MuffleAudio(0.6f);
+        }
 
         if (slowTimeCoroutine != null)
         {
@@ -107,7 +136,14 @@ public class TutorialManager : MonoBehaviour
         }
 
         slowTimeCoroutine = StartCoroutine(SlowTime(index));
-        transition.Show();
+
+        // DIAGNOSTIK sementara: hapus baris ini setelah masalah beres
+        Debug.Log("[Tutorial] ShowTutorial(" + index + ") panel='" + milestoneObjects[index].name +
+                  "' activeSelf=" + milestoneObjects[index].activeSelf +
+                  " activeInHierarchy=" + milestoneObjects[index].activeInHierarchy +
+                  " transition=" + (transition != null ? transition.name : "NULL") +
+                  " animator=" + (animators != null && animators[index] != null) +
+                  " timeScale=" + Time.timeScale);
 
         // Animasi dijalankan terakhir & dibungkus try-catch: kalau ada masalah, tutorial tetap muncul
         PlayPanelAnimation(index);
@@ -229,12 +265,23 @@ public class TutorialManager : MonoBehaviour
         }
 
         Time.timeScale = 1f;
-        AudioManager.Instance.UnmuffleAudio(0.6f);
-        transition.Hide();
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.UnmuffleAudio(0.6f);
+        }
+
+        if (transition != null)
+        {
+            transition.Hide();
+        }
 
         if (initialTutorial)
         {
-            GameTimer.Instance.StartTimer();
+            if (GameTimer.Instance != null)
+            {
+                GameTimer.Instance.StartTimer();
+            }
             initialTutorial = false;
         }
     }

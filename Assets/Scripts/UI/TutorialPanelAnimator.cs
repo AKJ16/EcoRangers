@@ -10,6 +10,9 @@ using UnityEngine.UI;
 //   1. Judul (pop)  ->  2. Bin (pop)  ->  3. Sampah (pop)
 //   4. Panah (geser masuk)  ->  5. Teks penjelasan (fade + naik)
 // Setelah muncul, panah bergerak maju-mundur dan sampah naik-turun pelan.
+//
+// Pengaman: kalau animasi tidak bisa dimulai (panel tidak aktif / ada error),
+// semua isi panel langsung ditampilkan apa adanya, tidak pernah dibiarkan tersembunyi.
 public class TutorialPanelAnimator : MonoBehaviour
 {
     private enum Kind { Title, Bin, Item, Arrow, Text }
@@ -45,36 +48,56 @@ public class TutorialPanelAnimator : MonoBehaviour
 
     public void Play(float startDelay)
     {
-        if (!collected)
+        // Panel (atau induknya) belum aktif: coroutine tidak bisa jalan, jadi jangan sembunyikan apa pun
+        if (!gameObject.activeInHierarchy)
         {
-            Collect();
+            Debug.LogWarning("TutorialPanelAnimator: '" + name + "' belum aktif di Hierarchy (induknya mati?). Animasi dilewati, isi panel ditampilkan biasa.");
+            return;
         }
 
-        if (routine != null)
+        try
         {
-            StopCoroutine(routine);
-        }
+            if (!collected)
+            {
+                Collect();
+            }
 
-        // Sembunyikan semua dulu sebelum panel turun ke layar
-        for (int i = 0; i < elements.Count; i++)
+            if (routine != null)
+            {
+                StopCoroutine(routine);
+            }
+
+            // Sembunyikan semua dulu sebelum panel turun ke layar
+            for (int i = 0; i < elements.Count; i++)
+            {
+                Apply(elements[i], -1f);
+            }
+
+            routine = StartCoroutine(Run(startDelay));
+        }
+        catch (System.Exception ex)
         {
-            Apply(elements[i], -1f);
+            Debug.LogException(ex);
+            RevealAll();
         }
-
-        routine = StartCoroutine(Run(startDelay));
     }
 
     private void OnDisable()
     {
         routine = null;
         // Kembalikan semua ke kondisi awal supaya tidak ada sisa animasi
+        RevealAll();
+    }
+
+    private void RevealAll()
+    {
         for (int i = 0; i < elements.Count; i++)
         {
             Element e = elements[i];
             if (e.rect == null) continue;
             e.rect.anchoredPosition = e.restPos;
             if (!e.hasPulse) e.rect.localScale = e.restScale;
-            e.group.alpha = 1f;
+            if (e.group != null) e.group.alpha = 1f;
         }
     }
 

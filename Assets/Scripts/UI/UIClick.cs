@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIButtonClick : MonoBehaviour
+// Nama class HARUS sama dengan nama file (UIClick.cs), kalau tidak Unity menganggap
+// komponen ini "Missing (Mono Script)" di semua tombol yang memakainya.
+public class UIClick : MonoBehaviour
 {
     [SerializeField] private AudioClip clickSound;
 
