@@ -107,4 +107,6 @@ AI assistance was used in the development of this project's code.
 
 ## 📄 License
 
-No license has been specified yet. Add a `LICENSE` file to clarify how others may use this project.
+The source code in this repository is released under the [MIT License](LICENSE).
+
+Third-party assets (art, music, and sound effects) are credited above and remain the property of their respective creators. They are subject to their own licenses and are not covered by the MIT License.
