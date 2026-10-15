@@ -4,12 +4,10 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// Cursor kustom (tangan). Dibuat otomatis saat game mulai, jadi TIDAK perlu
-// dipasang di scene mana pun. Gambar diambil dari Assets/Resources/Cursors/.
-//
-//  - Pointer : tangan menunjuk (default, juga di atas tombol UI)
-//  - Open    : tangan terbuka, saat mouse di atas sampah yang bisa di-drag
-//  - Grab    : tangan menggenggam, saat sampah sedang di-drag
+// Custom cursor (hand). Created automatically at start.
+//  - Open    : open hand (Default main cursor across the game)
+//  - Grab    : closed fist (when holding/dragging trash or tape)
+//  - Pointer : pointing finger (when hovering OR clicking UI buttons / opened boxes)
 public class CustomCursor : MonoBehaviour
 {
     private enum State { Pointer, Open, Grab }
@@ -18,22 +16,21 @@ public class CustomCursor : MonoBehaviour
 
     private static CustomCursor instance;
 
-    [SerializeField] private float heightRatio = 0.075f;   // tinggi cursor = 7.5% tinggi layar
+    [SerializeField] private float heightRatio = 0.075f;
     [SerializeField] private float minHeight = 44f;
     [SerializeField] private float maxHeight = 110f;
 
     private Texture2D[] textures = new Texture2D[3];
-    // Titik klik (hotspot) tiap cursor: x dari kiri, y dari ATAS, nilai 0-1.
     private readonly Vector2[] hotspots =
     {
-        new Vector2(0.338f, 0.027f),   // Pointer: ujung jari telunjuk
-        new Vector2(0.5f, 0.5f),       // Open: tengah telapak
-        new Vector2(0.5f, 0.5f)        // Grab: tengah genggaman
+        new Vector2(0.338f, 0.027f),   // Pointer: fingertip
+        new Vector2(0.5f, 0.5f),       // Open: center palm
+        new Vector2(0.5f, 0.5f)        // Grab: center fist
     };
 
     private RectTransform rect;
     private RawImage image;
-    private State state = State.Pointer;
+    private State state = State.Open;
     private bool grabbing;
     private bool hasFocus = true;
 
@@ -80,7 +77,7 @@ public class CustomCursor : MonoBehaviour
             if (textures[i] == null)
             {
                 string[] names = { "cursor_pointer", "cursor_open", "cursor_grab" };
-                Debug.LogWarning("CustomCursor: gambar '" + names[i] + "' tidak ditemukan. Pastikan ada file Assets/Resources/Cursors/" + names[i] + ".png. Cursor bawaan dipakai.");
+                Debug.LogWarning("CustomCursor: image '" + names[i] + "' not found in Assets/Resources/Cursors/. Default OS cursor used.");
                 instance = null;
                 Destroy(gameObject);
                 return;
@@ -100,11 +97,10 @@ public class CustomCursor : MonoBehaviour
         rect.anchorMax = Vector2.zero;
         image = imageObj.GetComponent<RawImage>();
         image.raycastTarget = false;
-        image.texture = textures[(int)State.Pointer];
+        image.texture = textures[(int)State.Open];
         image.enabled = false;
     }
 
-    // Bisa membaca gambar yang diimpor sebagai Texture maupun Sprite
     private static Texture2D LoadCursor(string fileName)
     {
         Texture2D tex = Resources.Load<Texture2D>("Cursors/" + fileName);
@@ -135,8 +131,6 @@ public class CustomCursor : MonoBehaviour
         if (image == null) return;
 
         Mouse mouse = Mouse.current;
-
-        // Di HP / tablet tidak ada cursor, dan kalau tidak ada mouse pakai cursor bawaan.
         bool touchDevice = Application.isMobilePlatform || SystemInfo.deviceType == DeviceType.Handheld;
         if (touchDevice || mouse == null || !hasFocus)
         {
@@ -153,9 +147,11 @@ public class CustomCursor : MonoBehaviour
 
         float dt = Time.unscaledDeltaTime;
 
-        // Tentukan state cursor
-        bool overDraggable = IsOverDraggable(pos);
+        // 1. Identify interactive targets
+        bool isClickable = IsOverButton(pos) || IsOverFlattenableBox(pos);
+        bool overDraggable = !isClickable && IsOverDraggable(pos);
 
+        // 2. Grabbing is only triggered on draggable items (never on buttons or flattenable boxes)
         if (mouse.leftButton.wasPressedThisFrame)
         {
             grabbing = overDraggable;
@@ -165,15 +161,32 @@ public class CustomCursor : MonoBehaviour
             grabbing = false;
         }
 
-        State newState = grabbing ? State.Grab : (overDraggable ? State.Open : State.Pointer);
+        // 3. Priority:
+        //    - Clickable targets (Button or Flattenable Box) ALWAYS stay as Pointer (even when clicked!)
+        //    - Active dragging stays as Grab
+        //    - Everything else is Open
+        State newState;
+        if (isClickable)
+        {
+            newState = State.Pointer;
+        }
+        else if (grabbing)
+        {
+            newState = State.Grab;
+        }
+        else
+        {
+            newState = State.Open;
+        }
+
         if (newState != state)
         {
             state = newState;
             image.texture = textures[(int)state];
-            pop = 1.2f;   // efek "pop" kecil saat ganti bentuk
+            pop = 1.2f;
         }
 
-        // Ukuran & posisi (pivot = hotspot, jadi ujung jari tepat di posisi mouse)
+        // Size & position
         Texture2D tex = textures[(int)state];
         float h = Mathf.Clamp(Screen.height * heightRatio, minHeight, maxHeight);
         float w = h * tex.width / tex.height;
@@ -182,7 +195,7 @@ public class CustomCursor : MonoBehaviour
         rect.pivot = new Vector2(hot.x, 1f - hot.y);
         rect.anchoredPosition = pos;
 
-        // Animasi skala: menekan = mengecil sedikit, Open = bernapas pelan
+        // Scale feedback: Pointer presses down slightly when clicked, Open breathes, Grab squeezes
         float targetScale = 1f;
         if (state == State.Pointer && mouse.leftButton.isPressed) targetScale = 0.88f;
         else if (state == State.Open) targetScale = 1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.03f;
@@ -191,7 +204,7 @@ public class CustomCursor : MonoBehaviour
         scale = Mathf.Lerp(scale, targetScale, 1f - Mathf.Exp(-18f * dt));
         pop = Mathf.Lerp(pop, 1f, 1f - Mathf.Exp(-14f * dt));
 
-        // Miring sedikit mengikuti arah gerak mouse saat menggenggam
+        // Tilt when dragging
         float targetRot = 0f;
         if (state == State.Grab && dt > 0f)
         {
@@ -205,27 +218,73 @@ public class CustomCursor : MonoBehaviour
         rect.localRotation = Quaternion.Euler(0f, 0f, rotation);
     }
 
-    // Sama seperti StartDrag() di DragDrop.cs: ada sampah di bawah mouse & tidak tertutup UI.
-    private bool IsOverDraggable(Vector2 screenPos)
+    private bool IsOverButton(Vector2 screenPos)
+    {
+        if (EventSystem.current == null) return false;
+
+        PointerEventData eventData = new PointerEventData(EventSystem.current) { position = screenPos };
+        uiResults.Clear();
+        EventSystem.current.RaycastAll(eventData, uiResults);
+
+        if (uiResults.Count > 0)
+        {
+            Button btn = uiResults[0].gameObject.GetComponentInParent<Button>();
+            if (btn != null && btn.interactable && btn.isActiveAndEnabled)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool IsOverFlattenableBox(Vector2 screenPos)
     {
         if (Time.timeScale <= 0.99f) return false;
+        if (IsPointerOverUI(screenPos)) return false;
 
         Camera cam = Camera.main;
         if (cam == null) return false;
 
         Ray ray = cam.ScreenPointToRay(screenPos);
         RaycastHit2D hit = Physics2D.GetRayIntersection(ray);
-        if (hit.collider == null || hit.collider.GetComponent<DragDrop>() == null) return false;
+        if (hit.collider == null) return false;
 
-        return !IsPointerOverUI(screenPos);
+        BoxLogic box = hit.collider.GetComponent<BoxLogic>();
+        if (box == null) box = hit.collider.GetComponentInParent<BoxLogic>();
+
+        return box != null && box.CanBeFlattened();
+    }
+
+    private bool IsOverDraggable(Vector2 screenPos)
+    {
+        if (Time.timeScale <= 0.99f) return false;
+        if (IsPointerOverUI(screenPos)) return false;
+
+        Camera cam = Camera.main;
+        if (cam == null) return false;
+
+        Ray ray = cam.ScreenPointToRay(screenPos);
+        RaycastHit2D hit = Physics2D.GetRayIntersection(ray);
+        if (hit.collider == null) return false;
+
+        // Check isActiveAndEnabled so disabled DragDrops on unflattened boxes are ignored
+        DragDrop dd = hit.collider.GetComponent<DragDrop>();
+        if (dd != null && dd.isActiveAndEnabled) return true;
+
+        TapePuller tp = hit.collider.GetComponent<TapePuller>();
+        if (tp != null && tp.isActiveAndEnabled) return true;
+
+        ResidueTray rt = hit.collider.GetComponent<ResidueTray>();
+        if (rt != null && rt.isActiveAndEnabled) return true;
+
+        return false;
     }
 
     private bool IsPointerOverUI(Vector2 screenPos)
     {
         if (EventSystem.current == null) return false;
 
-        PointerEventData eventData = new PointerEventData(EventSystem.current);
-        eventData.position = screenPos;
+        PointerEventData eventData = new PointerEventData(EventSystem.current) { position = screenPos };
         uiResults.Clear();
         EventSystem.current.RaycastAll(eventData, uiResults);
 

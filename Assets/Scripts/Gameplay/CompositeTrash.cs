@@ -33,10 +33,10 @@ public class CompositeTrash : MonoBehaviour
             GameObject part = parts[i];
 
             SpriteRenderer sr = part.GetComponent<SpriteRenderer>();
-            if (sr != null)
-            {
-                sr.sortingOrder += (i + 1);
-            }
+            //if (sr != null)
+            //{
+            //    sr.sortingOrder += (i + 1);
+            //}
 
             if (i == 0)
             {

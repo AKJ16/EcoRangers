@@ -13,12 +13,19 @@ public class LoadingManager : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private Slider progressBar;
     [SerializeField] private TextMeshProUGUI progressText;
-    [SerializeField] private float fadeDuration = 0.5f;
+
+    [Header("Transition Durations")]
+    [SerializeField] private float fadeInDuration = 0.3f;       // Fade to black/loading screen
+    [SerializeField] private float fastFadeOutDuration = 0.22f; // Fast fade out to reveal scene
+
+    [Header("Loading Visuals")]
     [SerializeField] private GameObject[] trashPrefabs;
     [SerializeField] private Transform trashContainer;
     [SerializeField] private float spinSpeed = 200f;
 
     private GameObject currTrash;
+    private Coroutine fadeRoutine;
+    private bool isLoadingSequence = false;
 
     // Methods
 
@@ -35,8 +42,37 @@ public class LoadingManager : MonoBehaviour
             return;
         }
 
-        canvasGroup.alpha = 0;
-        canvasGroup.blocksRaycasts = false;
+        // Start fully covered so the initial game launch doesn't snap
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 1f;
+            canvasGroup.blocksRaycasts = true;
+        }
+    }
+
+    private void Start()
+    {
+        // Smoothly and quickly fade out on initial game launch
+        FadeScreenOut(fastFadeOutDuration);
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Safeguard: If a scene is loaded outside of LoadSequence, fade out fast
+        if (!isLoadingSequence)
+        {
+            FadeScreenOut(fastFadeOutDuration);
+        }
     }
 
     private void Update()
@@ -54,7 +90,9 @@ public class LoadingManager : MonoBehaviour
 
     private IEnumerator LoadSequence(string sceneName)
     {
+        isLoadingSequence = true;
         Time.timeScale = 1f;
+
         if (progressBar != null)
         {
             progressBar.value = 0f;
@@ -62,22 +100,16 @@ public class LoadingManager : MonoBehaviour
 
         SpawnRandomTrash();
 
-        float elapsed = 0f;
+        // 1. Fade to black / loading overlay
         canvasGroup.blocksRaycasts = true;
-
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.FadeVolumeOut(fadeDuration);
+            AudioManager.Instance.FadeVolumeOut(fadeInDuration);
         }
 
-        while (elapsed < fadeDuration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            canvasGroup.alpha = elapsed / fadeDuration;
-            yield return null;
-        }
-        canvasGroup.alpha = 1f;
+        yield return StartCoroutine(FadeCanvasGroup(canvasGroup.alpha, 1f, fadeInDuration));
 
+        // 2. Load the scene in the background
         AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);
         operation.allowSceneActivation = false;
 
@@ -88,7 +120,7 @@ public class LoadingManager : MonoBehaviour
 
             if (progressBar != null)
             {
-                progressBar.value = Mathf.MoveTowards(progressBar.value, targetProgress, Time.unscaledDeltaTime * 2f);
+                progressBar.value = Mathf.MoveTowards(progressBar.value, targetProgress, Time.unscaledDeltaTime * 2.5f);
             }
 
             if (operation.progress >= 0.9f && progressBar.value >= 0.98f)
@@ -101,31 +133,64 @@ public class LoadingManager : MonoBehaviour
                 progressText.text = $"{(progressBar.value * 100):0}%";
             }
 
+            // Ready to activate scene
             if (operation.progress >= 0.9f && progressBar.value >= 1f)
             {
-                yield return new WaitForSecondsRealtime(0.3f);
+                yield return new WaitForSecondsRealtime(0.15f);
                 operation.allowSceneActivation = true;
             }
 
             yield return null;
         }
 
-        elapsed = 0f;
-        while (elapsed < fadeDuration)
+        if (currTrash != null)
         {
-            elapsed += Time.unscaledDeltaTime;
-            canvasGroup.alpha = 1f - (elapsed / fadeDuration);
-            yield return null;
+            Destroy(currTrash);
         }
+
+        // 3. Really fast fade out to reveal the new scene
+        yield return StartCoroutine(FadeCanvasGroup(1f, 0f, fastFadeOutDuration));
 
         canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = false;
-        if (currTrash != null) Destroy(currTrash);
+        isLoadingSequence = false;
+    }
+
+    public void FadeScreenOut(float duration)
+    {
+        if (fadeRoutine != null) StopCoroutine(fadeRoutine);
+        fadeRoutine = StartCoroutine(FadeOutRoutine(duration));
+    }
+
+    private IEnumerator FadeOutRoutine(float duration)
+    {
+        if (canvasGroup == null) yield break;
+
+        yield return StartCoroutine(FadeCanvasGroup(canvasGroup.alpha, 0f, duration));
+        canvasGroup.alpha = 0f;
+        canvasGroup.blocksRaycasts = false;
+        fadeRoutine = null;
+    }
+
+    private IEnumerator FadeCanvasGroup(float startAlpha, float targetAlpha, float duration)
+    {
+        if (canvasGroup == null) yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / Mathf.Max(duration, 0.01f));
+            canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
+            yield return null;
+        }
+
+        canvasGroup.alpha = targetAlpha;
     }
 
     private void SpawnRandomTrash()
     {
-        if (trashPrefabs.Length == 0 || trashContainer == null) return;
+        if (trashPrefabs == null || trashPrefabs.Length == 0 || trashContainer == null) return;
 
         if (currTrash != null)
         {
@@ -138,14 +203,7 @@ public class LoadingManager : MonoBehaviour
         currTrash.transform.localPosition = Vector3.zero;
         currTrash.transform.localScale = Vector3.one;
 
-        if (currTrash.TryGetComponent(out DragDrop dd))
-        {
-            dd.enabled = false;
-        }
-
-        if (currTrash.TryGetComponent(out TrashItem ti))
-        {
-            ti.enabled = false;
-        }
+        if (currTrash.TryGetComponent(out DragDrop dd)) dd.enabled = false;
+        if (currTrash.TryGetComponent(out TrashItem ti)) ti.enabled = false;
     }
 }

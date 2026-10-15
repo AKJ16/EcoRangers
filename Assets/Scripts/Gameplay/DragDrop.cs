@@ -41,6 +41,9 @@ public class DragDrop : MonoBehaviour
     [SerializeField] private float returnMaxTime = 0.45f;    // durasi kembali ke posisi awal (maks)
     [SerializeField] private bool pickUpEffect = true;       // VFX saat sampah diambil
 
+    [SerializeField] private int dragSortingBoost = 30; // Brings dragged item to the front
+    private int originalSortingOrder;
+
     private SpriteRenderer spriteRenderer;
     private Transform shadow;
     private SpriteRenderer shadowRenderer;
@@ -148,6 +151,12 @@ public class DragDrop : MonoBehaviour
             initialPos = transform.position;
             offset = transform.position - GetMouseWorldPosition(pointerPos);
 
+            if (spriteRenderer != null)
+            {
+                originalSortingOrder = spriteRenderer.sortingOrder;
+                spriteRenderer.sortingOrder += dragSortingBoost;
+            }
+
             // Polish: simpan kondisi awal untuk efek angkat
             baseScale = transform.localScale;
             baseRotation = transform.rotation;
@@ -204,6 +213,11 @@ public class DragDrop : MonoBehaviour
 
     private void EndLift()
     {
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sortingOrder = originalSortingOrder;
+        }
+
         transform.localScale = baseScale;
         transform.rotation = baseRotation;
         liftT = 0f;

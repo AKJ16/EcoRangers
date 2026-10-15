@@ -59,6 +59,8 @@ public class BoxLogic : MonoBehaviour
             AudioManager.Instance.PlaySFX(boxSound);
         }
 
+        SimpleVFX.GrabPulseYellow(transform.position, 1f, GetComponent<SpriteRenderer>(), 20);
+
         originalScale = transform.localScale;
         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z - 0.05f);
 
@@ -126,6 +128,8 @@ public class BoxLogic : MonoBehaviour
         gameObject.tag = paperTag;
         trashItem.ProcessSprite(flattenedSprite, originalScale, originalRotation);
 
+        SimpleVFX.GrabPulseYellow(transform.position, 1f, GetComponent<SpriteRenderer>(), 20);
+
         if (AudioManager.Instance != null && boxSound != null)
         {
             AudioManager.Instance.PlaySFX(boxSound);
@@ -135,6 +139,13 @@ public class BoxLogic : MonoBehaviour
     public bool GetIsFlattened()
     {
         return isFlattened;
+    }
+
+    public bool CanBeFlattened()
+    {
+        if (!isUnsealed || isFlattened) return false;
+        if (dependency != null && !dependency.IsUnlocked()) return false;
+        return true;
     }
 
     // INPUT HELPERS

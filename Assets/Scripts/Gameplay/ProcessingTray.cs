@@ -12,6 +12,8 @@ public class ProcessingTray : MonoBehaviour
     [SerializeField] private TrayCheck mainTray;
     [SerializeField] private AudioClip processSound;
 
+    [SerializeField] private string upcTag = "UpcBottle";
+
     [SerializeField] private float pulseScale = 1.2f;
     [SerializeField] private float pulseSpeed = 10f;
 
@@ -50,6 +52,8 @@ public class ProcessingTray : MonoBehaviour
         if (trash.tag != requiredTag)
             return false;
 
+        bool isUpcBottle = trash.CompareTag(upcTag);
+
         currTrash = trash;
 
         if (mainTray != null)
@@ -76,6 +80,17 @@ public class ProcessingTray : MonoBehaviour
         if (AudioManager.Instance != null && processSound != null)
         {
             AudioManager.Instance.PlaySFX(processSound);
+        }
+
+        if (mainTray != null)
+        {
+            mainTray.PlayComplexVFX();
+            mainTray.Pulse();
+        }
+
+        if (isUpcBottle)
+        {
+            SimpleVFX.GrabPulseRed(transform.position, 1f, GetComponent<SpriteRenderer>(), 20);
         }
 
         Pulse();

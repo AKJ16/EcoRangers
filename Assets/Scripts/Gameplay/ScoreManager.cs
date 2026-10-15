@@ -415,20 +415,62 @@ public class ScoreManager : MonoBehaviour
 
     private IEnumerator MoveObjectRoutine(GameObject obj, Vector3 targetPos, float duration)
     {
-        Vector3 startPos = obj.transform.position;
-        float elapsed = 0f;
+        if (obj == null) yield break;
 
+        Vector3 startPos = obj.transform.position;
+        Vector3 delta = targetPos - startPos;
+
+        // Detect if moving Up or Left (new items entering the screen)
+        bool isMovingUpOrLeft = (delta.y > 0.05f) || (delta.x < -0.05f);
+        BinCheck bin = obj.GetComponent<BinCheck>() ?? obj.GetComponentInChildren<BinCheck>();
+        bool isBin = bin != null || obj.name.ToLower().Contains("bin");
+
+        SpriteRenderer sr = obj.GetComponent<SpriteRenderer>() ?? obj.GetComponentInChildren<SpriteRenderer>();
+
+        // 1. Edge Pop VFX: Fires right as the bin begins emerging from offscreen
+        if (isBin && isMovingUpOrLeft)
+        {
+            SimpleVFX.BinPop(startPos, 0.85f, sr, 25);
+        }
+
+        float elapsed = 0f;
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            // Use unscaledDeltaTime so milestone tutorial slow-motion doesn't freeze the slide
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
 
-            float t = elapsed / duration;
-
-            obj.transform.position = Vector3.Lerp(startPos, targetPos, t);
+            // Bouncy overshoot pop for entering bins; smooth ease for existing bins sliding aside
+            float curve = (isBin && isMovingUpOrLeft) ? EaseOutBack(t) : SmoothStep(t);
+            obj.transform.position = Vector3.LerpUnclamped(startPos, targetPos, curve);
 
             yield return null;
         }
 
         obj.transform.position = targetPos;
+
+        // 2. Arrival Pop VFX & bin bounce when it snaps into place
+        if (isBin && isMovingUpOrLeft)
+        {
+            SimpleVFX.BinPop(targetPos, 1.25f, sr, 25);
+
+            if (bin != null)
+            {
+                bin.Pulse();
+            }
+        }
+    }
+
+    private static float EaseOutBack(float x)
+    {
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
+        float m = x - 1f;
+        return 1f + c3 * m * m * m + c1 * m * m;
+    }
+
+    private static float SmoothStep(float x)
+    {
+        return x * x * (3f - 2f * x);
     }
 }

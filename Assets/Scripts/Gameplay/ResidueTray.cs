@@ -122,6 +122,9 @@ public class ResidueTray : MonoBehaviour
                         mainTray.HandleTrashDrop(trash.gameObject, true);
                         transform.position = initialPos;
 
+                        mainTray.PlayComplexVFX();
+                        mainTray.Pulse();
+
                         if (AudioManager.Instance != null && releaseSound != null)
                         {
                             AudioManager.Instance.PlaySFX(releaseSound);

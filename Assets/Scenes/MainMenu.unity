@@ -1499,7 +1499,8 @@ MonoBehaviour:
   canvasGroup: {fileID: 510652808}
   progressBar: {fileID: 319330053}
   progressText: {fileID: 1650368106}
-  fadeDuration: 0.5
+  fadeInDuration: 0.3
+  fastFadeOutDuration: 0.7
   trashPrefabs:
   - {fileID: 6913885736079766503, guid: 44d7f1fc7094f32469e9c78260ed5cf6, type: 3}
   - {fileID: 6913885736079766503, guid: 5093652021f77f849818062365d8feab, type: 3}

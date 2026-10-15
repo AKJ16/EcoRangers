@@ -89,6 +89,53 @@ public class SimpleVFX : MonoBehaviour
         SpawnRing(pos, new Color(1f, 0.3f, 0.25f, 0.9f), 0.4f * scale, 1.5f * scale, 0.4f, reference, boost);
     }
 
+    // Tray Addition
+
+    // Simple white pulse when placing regular trash on the tray
+    public static void TraySimplePulse(Vector3 pos, float scale = 1f, SpriteRenderer reference = null, int boost = 20)
+    {
+        SpawnRing(pos, new Color(1f, 1f, 1f, 0.95f), 0.4f * scale, 2.0f * scale, 0.45f, reference, boost);
+    }
+
+    // White VFX (Ring + Sparkle Burst) for complex trash (B3 or Residue)
+    public static void TrayComplex(Vector3 pos, float scale = 1f, SpriteRenderer reference = null, int boost = 20)
+    {
+        SpawnRing(pos, new Color(1f, 1f, 1f, 0.95f), 0.5f * scale, 2.5f * scale, 0.5f, reference, boost);
+        SpawnBurst(pos, new Color(1f, 1f, 1f, 1f), new Color(0.9f, 0.9f, 0.95f, 1f), 14, 3.2f * scale, 0.28f * scale, 0.6f, reference, boost + 1);
+    }
+
+    // Yellow-orange VFX (Ring + Sparkle Burst) for Composite trash
+    public static void TrayComposite(Vector3 pos, float scale = 0.6f, SpriteRenderer reference = null, int boost = 20)
+    {
+        SpawnRing(pos, new Color(1f, 0.95f, 0.2f, 0.95f), 0.6f * scale, 3.0f * scale, 0.5f, reference, boost);
+        SpawnBurst(pos, new Color(1f, 1f, 0.3f, 1f), new Color(1f, 0.85f, 0.1f, 1f), 14, 3.2f * scale, 0.28f * scale, 0.6f, reference, boost + 1);
+    }
+
+    // Red grab-style burst for "UpcBottle" on the Processing Tray
+    public static void GrabPulseRed(Vector3 pos, float scale = 0.5f, SpriteRenderer reference = null, int boost = 20)
+    {
+        SpawnRing(pos, new Color(0.25f, 0f, 0f, 0.95f), 0.4f * scale, 2.0f * scale, 0.45f, reference, boost);
+        SpawnBurst(pos, new Color(0.35f, 0f, 0f, 1f), new Color(0.55f, 0f, 0f, 1f), 10, 3.0f * scale, 0.26f * scale, 0.5f, reference, boost + 1);
+    }
+
+    // Yellow grab-style burst for Box Unseal & Flatten (same yellow as composite trash)
+    public static void GrabPulseYellow(Vector3 pos, float scale = 0.5f, SpriteRenderer reference = null, int boost = 20)
+    {
+        SpawnRing(pos, new Color(1f, 0.95f, 0.2f, 0.95f), 0.5f * scale, 2.5f * scale, 0.45f, reference, boost);
+        SpawnBurst(pos, new Color(1f, 1f, 0.3f, 1f), new Color(1f, 0.85f, 0.1f, 1f), 10, 3.0f * scale, 0.26f * scale, 0.5f, reference, boost + 1);
+    }
+
+    // Pop effect when a new bin emerges from the screen edge into the scene
+    public static void BinPop(Vector3 pos, float scale = 1.2f, SpriteRenderer reference = null, int boost = 25)
+    {
+        Color ringColor = new Color(1f, 0.92f, 0.4f, 0.95f); // Bright golden-white
+        Color sparkA = Color.white;
+        Color sparkB = new Color(1f, 0.82f, 0.25f, 1f);
+
+        SpawnRing(pos, ringColor, 0.4f * scale, 2.2f * scale, 0.5f, reference, boost);
+        SpawnBurst(pos, sparkA, sparkB, 14, 3.5f * scale, 0.28f * scale, 0.55f, reference, boost + 1);
+    }
+
     // Animasi
 
     private void Update()
