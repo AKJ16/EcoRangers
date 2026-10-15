@@ -8223,21 +8223,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 704065111}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b105203b02281d4f8bfd76182739047, type: 3}
+  m_Script: {fileID: 11500000, guid: ff9f9f78400519fa09592bb28771d4eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialManager
-  transition: {fileID: 1285304270}
-  milestoneObjects:
-  - {fileID: 609403072}
-  - {fileID: 746731438}
-  - {fileID: 1838667557}
-  - {fileID: 465003289}
-  - {fileID: 160046586}
-  - {fileID: 1777562020}
-  buttonText: {fileID: 509320723}
-  extraText: {fileID: 1897810185}
+  transition: {fileID: 0}
+  milestoneObjects: []
+  buttonText: {fileID: 0}
+  extraText: {fileID: 0}
   startText: Start!!
   continueText: Got It!!
+  revealDelay: 0.55
+  closeUnlockDelay: 1.1
+  alertDelay: 0.9
 --- !u!1 &708951070
 GameObject:
   m_ObjectHideFlags: 0
